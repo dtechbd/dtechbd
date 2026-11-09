@@ -1,0 +1,135 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "Inventory product record in Diamond Tech ERP",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "proId": { "type": "string", "maxLength": 64 },
+        "name": { "type": "string", "maxLength": 200 },
+        "category": { "type": "string", "maxLength": 100 },
+        "brand": { "type": "string", "maxLength": 100 },
+        "supplier": { "type": "string", "maxLength": 150 },
+        "stock": { "type": "number" },
+        "costPrice": { "type": "number" },
+        "sellPrice": { "type": "number" },
+        "warranty": { "type": "string", "maxLength": 64 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "proId", "name", "category", "brand", "supplier", "stock", "costPrice", "sellPrice", "warranty", "createdAt", "updatedAt"]
+    },
+    "Customer": {
+      "title": "Customer",
+      "description": "Customer profile and due balance record",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "maxLength": 150 },
+        "mobile": { "type": "string", "maxLength": 40 },
+        "address": { "type": "string", "maxLength": 250 },
+        "due": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "name", "mobile", "address", "due", "createdAt", "updatedAt"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Sales invoice or online e-commerce order",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "invoiceNo": { "type": "string", "maxLength": 64 },
+        "customerName": { "type": "string", "maxLength": 150 },
+        "amount": { "type": "number" },
+        "paidAmount": { "type": "number" },
+        "dueAmount": { "type": "number" },
+        "paymentMethod": { "type": "string", "maxLength": 64 },
+        "orderStatus": { "type": "string", "enum": ["Pending", "Processing", "Completed", "Cancel"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "invoiceNo", "customerName", "amount", "paidAmount", "dueAmount", "paymentMethod", "orderStatus", "createdAt", "updatedAt"]
+    },
+    "ServiceTicket": {
+      "title": "ServiceTicket",
+      "description": "Warranty, Return, or Repair & Service ticket",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "ticketNo": { "type": "string", "maxLength": 64 },
+        "ticketType": { "type": "string", "enum": ["Warranty", "Return", "Repair"] },
+        "customerName": { "type": "string", "maxLength": 150 },
+        "productName": { "type": "string", "maxLength": 200 },
+        "serialNo": { "type": "string", "maxLength": 100 },
+        "reason": { "type": "string", "maxLength": 300 },
+        "ticketStatus": { "type": "string", "enum": ["Pending", "In Shop", "Ready", "Completed"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "ticketNo", "ticketType", "customerName", "productName", "serialNo", "reason", "ticketStatus", "createdAt", "updatedAt"]
+    },
+    "FinancialEntry": {
+      "title": "FinancialEntry",
+      "description": "Income, Expense, Payment, or Withdrawal entry",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "entryType": { "type": "string", "enum": ["Income", "Expense", "Payment", "Withdraw"] },
+        "category": { "type": "string", "maxLength": 100 },
+        "description": { "type": "string", "maxLength": 300 },
+        "amount": { "type": "number" },
+        "entryStatus": { "type": "string", "enum": ["Pending", "Approved", "Denied", "Completed"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "entryType", "category", "description", "amount", "entryStatus", "createdAt", "updatedAt"]
+    },
+    "SiteLicense": {
+      "title": "SiteLicense",
+      "description": "Issued ERP software license for a client site",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "siteName": { "type": "string", "maxLength": 150 },
+        "licenseKey": { "type": "string", "maxLength": 100 },
+        "domain": { "type": "string", "maxLength": 150 },
+        "nodeId": { "type": "string", "maxLength": 100 },
+        "edition": { "type": "string", "maxLength": 100 },
+        "licenseStatus": { "type": "string", "enum": ["Active", "Expiring", "Expired", "Suspended"] },
+        "remainingDays": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "siteName", "licenseKey", "domain", "nodeId", "edition", "licenseStatus", "remainingDays", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": { "$ref": "#/entities/Product" },
+      "description": "Stores ERP products and stock records"
+    },
+    "/customers/{customerId}": {
+      "schema": { "$ref": "#/entities/Customer" },
+      "description": "Stores customer records and due balances"
+    },
+    "/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/Order" },
+      "description": "Stores POS sales invoices and online orders"
+    },
+    "/service_tickets/{ticketId}": {
+      "schema": { "$ref": "#/entities/ServiceTicket" },
+      "description": "Stores warranty, return, and repair service tickets"
+    },
+    "/financial_entries/{entryId}": {
+      "schema": { "$ref": "#/entities/FinancialEntry" },
+      "description": "Stores income, expense, payment, and withdrawal records"
+    },
+    "/site_licenses/{licenseId}": {
+      "schema": { "$ref": "#/entities/SiteLicense" },
+      "description": "Stores software license records for Active Site & Renewal Hub"
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "Diamond Tech ERP & E-Commerce System",
+  "description": "Comprehensive ERP, Inventory, Accounts, Customer Management, Service Management, License Administration, and Public E-Commerce System for Diamond Tech.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

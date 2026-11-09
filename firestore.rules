@@ -1,0 +1,249 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Reusable hardened global helpers
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isVerifiedUser() && (
+        request.auth.token.email == 'ucec.gov.bd@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // Entity Validation Blueprints
+    function isValidProduct(data) {
+      return data.keys().hasAll(['ownerId', 'proId', 'name', 'category', 'brand', 'supplier', 'stock', 'costPrice', 'sellPrice', 'warranty', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['ownerId', 'proId', 'name', 'category', 'brand', 'supplier', 'stock', 'costPrice', 'sellPrice', 'warranty', 'createdAt', 'updatedAt'])
+        && data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.ownerId == request.auth.uid
+        && data.proId is string && data.proId.size() >= 1 && data.proId.size() <= 64
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 200
+        && data.category is string && data.category.size() >= 1 && data.category.size() <= 100
+        && data.brand is string && data.brand.size() >= 1 && data.brand.size() <= 100
+        && data.supplier is string && data.supplier.size() >= 1 && data.supplier.size() <= 150
+        && data.stock is number && data.stock >= 0
+        && data.costPrice is number && data.costPrice >= 0
+        && data.sellPrice is number && data.sellPrice >= 0
+        && data.warranty is string && data.warranty.size() >= 1 && data.warranty.size() <= 64
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidCustomer(data) {
+      return data.keys().hasAll(['ownerId', 'name', 'mobile', 'address', 'due', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['ownerId', 'name', 'mobile', 'address', 'due', 'createdAt', 'updatedAt'])
+        && data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.ownerId == request.auth.uid
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 150
+        && data.mobile is string && data.mobile.size() >= 1 && data.mobile.size() <= 40
+        && data.address is string && data.address.size() >= 1 && data.address.size() <= 250
+        && data.due is number
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidOrder(data) {
+      return data.keys().hasAll(['ownerId', 'invoiceNo', 'customerName', 'amount', 'paidAmount', 'dueAmount', 'paymentMethod', 'orderStatus', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['ownerId', 'invoiceNo', 'customerName', 'amount', 'paidAmount', 'dueAmount', 'paymentMethod', 'orderStatus', 'createdAt', 'updatedAt'])
+        && data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.ownerId == request.auth.uid
+        && data.invoiceNo is string && data.invoiceNo.size() >= 1 && data.invoiceNo.size() <= 64
+        && data.customerName is string && data.customerName.size() >= 1 && data.customerName.size() <= 150
+        && data.amount is number && data.amount >= 0
+        && data.paidAmount is number && data.paidAmount >= 0
+        && data.dueAmount is number
+        && data.paymentMethod is string && data.paymentMethod.size() >= 1 && data.paymentMethod.size() <= 64
+        && data.orderStatus is string && data.orderStatus.size() <= 32 && data.orderStatus in ['Pending', 'Processing', 'Completed', 'Cancel']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidServiceTicket(data) {
+      return data.keys().hasAll(['ownerId', 'ticketNo', 'ticketType', 'customerName', 'productName', 'serialNo', 'reason', 'ticketStatus', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['ownerId', 'ticketNo', 'ticketType', 'customerName', 'productName', 'serialNo', 'reason', 'ticketStatus', 'createdAt', 'updatedAt'])
+        && data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.ownerId == request.auth.uid
+        && data.ticketNo is string && data.ticketNo.size() >= 1 && data.ticketNo.size() <= 64
+        && data.ticketType is string && data.ticketType.size() <= 32 && data.ticketType in ['Warranty', 'Return', 'Repair']
+        && data.customerName is string && data.customerName.size() >= 1 && data.customerName.size() <= 150
+        && data.productName is string && data.productName.size() >= 1 && data.productName.size() <= 200
+        && data.serialNo is string && data.serialNo.size() >= 1 && data.serialNo.size() <= 100
+        && data.reason is string && data.reason.size() >= 1 && data.reason.size() <= 300
+        && data.ticketStatus is string && data.ticketStatus.size() <= 32 && data.ticketStatus in ['Pending', 'In Shop', 'Ready', 'Completed']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidFinancialEntry(data) {
+      return data.keys().hasAll(['ownerId', 'entryType', 'category', 'description', 'amount', 'entryStatus', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['ownerId', 'entryType', 'category', 'description', 'amount', 'entryStatus', 'createdAt', 'updatedAt'])
+        && data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.ownerId == request.auth.uid
+        && data.entryType is string && data.entryType.size() <= 32 && data.entryType in ['Income', 'Expense', 'Payment', 'Withdraw']
+        && data.category is string && data.category.size() >= 1 && data.category.size() <= 100
+        && data.description is string && data.description.size() >= 1 && data.description.size() <= 300
+        && data.amount is number && data.amount >= 0
+        && data.entryStatus is string && data.entryStatus.size() <= 32 && data.entryStatus in ['Pending', 'Approved', 'Denied', 'Completed']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidSiteLicense(data) {
+      return data.keys().hasAll(['ownerId', 'siteName', 'licenseKey', 'domain', 'nodeId', 'edition', 'licenseStatus', 'remainingDays', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['ownerId', 'siteName', 'licenseKey', 'domain', 'nodeId', 'edition', 'licenseStatus', 'remainingDays', 'createdAt', 'updatedAt'])
+        && data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.ownerId == request.auth.uid
+        && data.siteName is string && data.siteName.size() >= 1 && data.siteName.size() <= 150
+        && data.licenseKey is string && data.licenseKey.size() >= 1 && data.licenseKey.size() <= 100
+        && data.domain is string && data.domain.size() >= 1 && data.domain.size() <= 150
+        && data.nodeId is string && data.nodeId.size() >= 1 && data.nodeId.size() <= 100
+        && data.edition is string && data.edition.size() >= 1 && data.edition.size() <= 100
+        && data.licenseStatus is string && data.licenseStatus.size() <= 32 && data.licenseStatus in ['Active', 'Expiring', 'Expired', 'Suspended']
+        && data.remainingDays is number && data.remainingDays >= 0
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // 1. Products Collection
+    match /products/{productId} {
+      allow get: if isSignedIn() && isValidId(productId) && (existing().ownerId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (existing().ownerId == request.auth.uid || isAdmin());
+      allow create: if isVerifiedUser() && isValidId(productId) && isValidProduct(incoming())
+        && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() && isValidId(productId) && isValidProduct(incoming())
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (existing().ownerId == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'category', 'brand', 'supplier', 'stock', 'costPrice', 'sellPrice', 'warranty', 'updatedAt']))
+        );
+      allow delete: if isVerifiedUser() && isValidId(productId) && (existing().ownerId == request.auth.uid || isAdmin());
+    }
+
+    // 2. Customers Collection (PII Protected)
+    match /customers/{customerId} {
+      allow get: if isSignedIn() && isValidId(customerId) && (existing().ownerId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (existing().ownerId == request.auth.uid || isAdmin());
+      allow create: if isVerifiedUser() && isValidId(customerId) && isValidCustomer(incoming())
+        && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() && isValidId(customerId) && isValidCustomer(incoming())
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (existing().ownerId == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'mobile', 'address', 'due', 'updatedAt']))
+        );
+      allow delete: if isVerifiedUser() && isValidId(customerId) && (existing().ownerId == request.auth.uid || isAdmin());
+    }
+
+    // 3. Orders Collection (Terminal State Locked)
+    match /orders/{orderId} {
+      allow get: if isSignedIn() && isValidId(orderId) && (existing().ownerId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (existing().ownerId == request.auth.uid || isAdmin());
+      allow create: if isVerifiedUser() && isValidId(orderId) && isValidOrder(incoming())
+        && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() && isValidId(orderId) && isValidOrder(incoming())
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (
+            existing().ownerId == request.auth.uid
+            && !(existing().orderStatus in ['Completed', 'Cancel'])
+            && incoming().diff(existing()).affectedKeys().hasOnly(['paidAmount', 'dueAmount', 'paymentMethod', 'orderStatus', 'updatedAt'])
+          )
+        );
+      allow delete: if isVerifiedUser() && isValidId(orderId) && (existing().ownerId == request.auth.uid || isAdmin());
+    }
+
+    // 4. Service Tickets Collection (Terminal State Locked)
+    match /service_tickets/{ticketId} {
+      allow get: if isSignedIn() && isValidId(ticketId) && (existing().ownerId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (existing().ownerId == request.auth.uid || isAdmin());
+      allow create: if isVerifiedUser() && isValidId(ticketId) && isValidServiceTicket(incoming())
+        && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() && isValidId(ticketId) && isValidServiceTicket(incoming())
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (
+            existing().ownerId == request.auth.uid
+            && existing().ticketStatus != 'Completed'
+            && incoming().diff(existing()).affectedKeys().hasOnly(['reason', 'ticketStatus', 'updatedAt'])
+          )
+        );
+      allow delete: if isVerifiedUser() && isValidId(ticketId) && (existing().ownerId == request.auth.uid || isAdmin());
+    }
+
+    // 5. Financial Entries Collection
+    match /financial_entries/{entryId} {
+      allow get: if isSignedIn() && isValidId(entryId) && (existing().ownerId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (existing().ownerId == request.auth.uid || isAdmin());
+      allow create: if isVerifiedUser() && isValidId(entryId) && isValidFinancialEntry(incoming())
+        && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() && isValidId(entryId) && isValidFinancialEntry(incoming())
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (
+            existing().ownerId == request.auth.uid
+            && !(existing().entryStatus in ['Approved', 'Denied', 'Completed'])
+            && incoming().diff(existing()).affectedKeys().hasOnly(['description', 'amount', 'entryStatus', 'updatedAt'])
+          )
+        );
+      allow delete: if isVerifiedUser() && isValidId(entryId) && (existing().ownerId == request.auth.uid || isAdmin());
+    }
+
+    // 6. Site Licenses Collection
+    match /site_licenses/{licenseId} {
+      allow get: if isSignedIn() && isValidId(licenseId) && (existing().ownerId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (existing().ownerId == request.auth.uid || isAdmin());
+      allow create: if isVerifiedUser() && isValidId(licenseId) && isValidSiteLicense(incoming())
+        && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() && isValidId(licenseId) && isValidSiteLicense(incoming())
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (
+            existing().ownerId == request.auth.uid
+            && incoming().diff(existing()).affectedKeys().hasOnly(['siteName', 'domain', 'edition', 'licenseStatus', 'remainingDays', 'updatedAt'])
+          )
+        );
+      allow delete: if isVerifiedUser() && isValidId(licenseId) && (existing().ownerId == request.auth.uid || isAdmin());
+    }
+  }
+}
